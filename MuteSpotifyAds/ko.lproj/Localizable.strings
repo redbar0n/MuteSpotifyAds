@@ -1,0 +1,35 @@
+/* Settings window — added by Mutefy. Keys are the English source strings, so any language
+   without a Localizable.strings simply shows English. */
+
+"Mutefy Settings" = "Mutefy 설정";
+"Settings…" = "설정…";
+
+/* Filler music */
+"Filler music" = "대체 음악";
+"Play music from a folder while an ad is muted" = "광고를 음소거한 동안 지정한 폴더의 음악 재생";
+"A measured ad break ran 56 seconds. This fills that stretch with your own music instead of silence." = "실측한 광고 구간은 56초였습니다. 그 시간을 침묵 대신 내 음악으로 채웁니다.";
+"Folder:" = "폴더:";
+"(none selected)" = "(선택 안 됨)";
+"Choose…" = "선택…";
+"Include subfolders" = "하위 폴더 포함";
+"%d playable file(s) found" = "재생 가능한 파일 %d개";
+"Volume" = "음량";
+"Fade in" = "페이드 인";
+"Fade out" = "페이드 아웃";
+"Start delay" = "시작 지연";
+"Choose the folder to play from while ads are muted." = "광고 음소거 중 재생할 폴더를 선택하세요.";
+"No playable music in the filler folder" = "대체 음악 폴더에 재생 가능한 파일이 없습니다";
+
+/* Skipping */
+"Skipping" = "건너뛰기";
+"Restart Spotify to skip ads instead of muting" = "음소거 대신 Spotify를 재시작해 광고 건너뛰기";
+"Skipping and filler music cannot both be on: restarting removes the ad the filler would cover." = "건너뛰기와 대체 음악은 함께 켤 수 없습니다. 재시작하면 대체 음악이 덮을 광고 자체가 사라집니다.";
+
+/* Advanced */
+"Advanced" = "고급";
+"Safety ceiling" = "안전 상한";
+"Force the volume back if detection fails during an ad. Must comfortably exceed a full ad break." = "광고 도중 감지가 실패하면 음량을 강제로 되돌립니다. 광고 구간 전체보다 넉넉히 길어야 합니다.";
+"Entry debounce" = "진입 대기";
+"How long an ad verdict must hold before muting. Leaving an ad is never debounced." = "음소거하기 전 광고 판정이 유지되어야 하는 시간입니다. 광고에서 빠져나올 때는 기다리지 않습니다.";
+"Open at login" = "로그인 시 실행";
+"Reveal log file" = "로그 파일 열기";

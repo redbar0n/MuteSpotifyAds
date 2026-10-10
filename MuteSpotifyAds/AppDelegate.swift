@@ -9,6 +9,7 @@
 import Cocoa
 import Foundation
 import UserNotifications
+import UniformTypeIdentifiers
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -30,6 +31,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     
     let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     var spotifyManager: SpotifyManager?
+    let settingsModel = MutefySettingsModel()
     
     @IBAction func quit(_ sender: Any) {
         NSApplication.shared.terminate(self)
@@ -41,11 +43,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
     
     @IBAction func openProjectWebsite(_ sender: Any) {
-        openWebsite(url: "https://github.com/MikeWLloyd/MuteSpotifyAds")
+        openWebsite(url: "https://github.com/countnine/MuteSpotifyAds")
     }
     
     @IBAction func openReportBugWebsite(_ sender: Any) {
-        openWebsite(url: "https://github.com/MikeWLloyd/MuteSpotifyAds/issues")
+        openWebsite(url: "https://github.com/countnine/MuteSpotifyAds/issues")
     }
     
     
@@ -73,8 +75,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         } else {
             spotifyManager?.restartToSkipAdsEnabled = true
             sender.state = .on
+
+            // Skipping removes the ad the filler exists to cover, so the two are exclusive.
+            // Switching this on from the menu has to turn the filler off, exactly as the
+            // settings window does in the other direction.
+            if MutefySettings.fillerEnabled {
+                MutefySettings.fillerEnabled = false
+                settingsModel.reloadFromDefaults()
+                mutefyLog("filler disabled — 'restart to skip ads' was switched on")
+            }
         }
         UserDefaults.standard.set(spotifyManager?.restartToSkipAdsEnabled, forKey: restartToSkipAdsKey)
+        settingsModel.reloadFromDefaults()
     }
     
     @IBAction func toggleNotifications(_ sender: NSMenuItem) {
@@ -105,7 +117,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             sender.state = .off
         } else {
             let panel = NSSavePanel()
-            panel.allowedFileTypes = ["csv"]
+            panel.allowedContentTypes = [.commaSeparatedText]
             panel.allowsOtherFileTypes = true
             panel.canCreateDirectories = true
             panel.canSelectHiddenExtension = true
@@ -135,7 +147,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             self.titleMenuItem.title = self.titleMenuItem.title + " v\(version)"
         }
         
-        print("MuteSpotifyAds v\(version)")
+        print("Mutefy v\(version)")
         print("macOS \(ProcessInfo.processInfo.operatingSystemVersionString))")
         
         spotifyManager = SpotifyManager(titleChangeHandler: {
@@ -176,8 +188,92 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         if spotifyManager?.songLogPath != nil {
             songLogCheckbox.state = .on
         }
-        
+
+        configureMutefy()
+
         spotifyManager?.startWatchingForFileChanges()
+    }
+
+    // MARK: - Mutefy
+
+    /// Wires up everything Mutefy adds on top of MuteSpotifyAds.
+    private func configureMutefy() {
+        guard let spotifyManager = spotifyManager else { return }
+
+        mutefyLog("=== Mutefy \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] ?? "?") starting on macOS \(ProcessInfo.processInfo.operatingSystemVersionString) ===")
+
+        SettingsWindowController.filler = spotifyManager.filler
+
+        spotifyManager.filler.onFailure = { [weak self] folder in
+            self?.sendNotificatoin(title: NSLocalizedString("No playable music in the filler folder", comment: ""))
+            mutefyLog("filler: giving up, nothing playable in '\(folder)'")
+        }
+
+        spotifyManager.filler.onCountChanged = { [weak self] count in
+            self?.settingsModel.playableCount = count
+        }
+
+        settingsModel.onFillerChanged = { [weak self] folderChanged in
+            guard let filler = self?.spotifyManager?.filler else { return }
+            if folderChanged { filler.invalidateFolderCache() }
+            filler.refreshVolume()
+        }
+
+        // Build the file list now rather than during the first ad. Walking ~/Music on a Mac
+        // with an Apple Music library measured 50 seconds — long enough that the filler
+        // arrived with 5 seconds of the break left.
+        spotifyManager.filler.warmUp()
+
+        settingsModel.onAdvancedChanged = { [weak self] in
+            self?.spotifyManager?.applySettings()
+        }
+
+        settingsModel.onExclusivityChanged = { [weak self] in
+            self?.syncRestartToSkipAdsFromDefaults()
+        }
+
+        addSettingsMenuItem()
+
+        // Before anything else touches the volume: a previous run may have died mid-ad and
+        // left Spotify silent. Runs even when ad muting is off, because the stale value is
+        // ours either way.
+        spotifyManager.recoverStaleMuteIfNeeded()
+
+        // The safety ceiling only advances when something asks, so a fallback poll is not
+        // optional — file events alone cannot rescue a stuck mute.
+        spotifyManager.startPolling()
+    }
+
+    /// Inserts the settings item programmatically rather than in MainMenu.xib, so the six
+    /// existing localisations do not each need editing to gain one row.
+    private func addSettingsMenuItem() {
+        let item = NSMenuItem(
+            title: NSLocalizedString("Settings…", comment: ""),
+            action: #selector(openSettings(_:)),
+            keyEquivalent: ",")
+        item.target = self
+        // Just under the title row, where a settings entry is expected.
+        statusMenu.insertItem(item, at: min(1, statusMenu.numberOfItems))
+        statusMenu.insertItem(.separator(), at: min(2, statusMenu.numberOfItems))
+    }
+
+    @objc func openSettings(_ sender: Any) {
+        SettingsWindowController.show(model: settingsModel)
+    }
+
+    /// Keeps the status menu tick in step when the settings window flips the exclusivity.
+    private func syncRestartToSkipAdsFromDefaults() {
+        let enabled = UserDefaults.standard.bool(forKey: restartToSkipAdsKey)
+        spotifyManager?.restartToSkipAdsEnabled = enabled
+        restartToSkipAdsCheckbox.state = enabled ? .on : .off
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        // Never leave Spotify silenced because we went away. This is the failure the Windows
+        // build actually hit, and here it would persist across launches.
+        spotifyManager?.filler.stopImmediately()
+        spotifyManager?.restoreVolumeBeforeQuitting()
+        mutefyLog("=== Mutefy stopping ===")
     }
     
     func setStatusBarTitle(title: StatusBarTitle) {

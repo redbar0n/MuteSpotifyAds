@@ -1,0 +1,36 @@
+/* Settings window — added by Mutefy. Keys are the English source strings, so a language
+   without its own Localizable.strings falls back to English automatically. This file exists
+   to give translators a complete list of what needs translating. */
+
+"Mutefy Settings" = "Mutefy Settings";
+"Settings…" = "Settings…";
+
+/* Filler music */
+"Filler music" = "Filler music";
+"Play music from a folder while an ad is muted" = "Play music from a folder while an ad is muted";
+"A measured ad break ran 56 seconds. This fills that stretch with your own music instead of silence." = "A measured ad break ran 56 seconds. This fills that stretch with your own music instead of silence.";
+"Folder:" = "Folder:";
+"(none selected)" = "(none selected)";
+"Choose…" = "Choose…";
+"Include subfolders" = "Include subfolders";
+"%d playable file(s) found" = "%d playable file(s) found";
+"Volume" = "Volume";
+"Fade in" = "Fade in";
+"Fade out" = "Fade out";
+"Start delay" = "Start delay";
+"Choose the folder to play from while ads are muted." = "Choose the folder to play from while ads are muted.";
+"No playable music in the filler folder" = "No playable music in the filler folder";
+
+/* Skipping */
+"Skipping" = "Skipping";
+"Restart Spotify to skip ads instead of muting" = "Restart Spotify to skip ads instead of muting";
+"Skipping and filler music cannot both be on: restarting removes the ad the filler would cover." = "Skipping and filler music cannot both be on: restarting removes the ad the filler would cover.";
+
+/* Advanced */
+"Advanced" = "Advanced";
+"Safety ceiling" = "Safety ceiling";
+"Force the volume back if detection fails during an ad. Must comfortably exceed a full ad break." = "Force the volume back if detection fails during an ad. Must comfortably exceed a full ad break.";
+"Entry debounce" = "Entry debounce";
+"How long an ad verdict must hold before muting. Leaving an ad is never debounced." = "How long an ad verdict must hold before muting. Leaving an ad is never debounced.";
+"Open at login" = "Open at login";
+"Reveal log file" = "Reveal log file";

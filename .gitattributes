@@ -1,1 +1,8 @@
 *.png filter=lfs diff=lfs merge=lfs -text
+
+# This is a macOS-only project, but it is edited from Windows too. Pin line endings so a
+# Windows checkout does not rewrite every source file to CRLF and produce noise diffs.
+* text=auto eol=lf
+*.png binary
+*.icns binary
+*.car binary

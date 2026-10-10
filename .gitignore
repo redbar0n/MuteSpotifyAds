@@ -3,3 +3,6 @@ MuteSpotifyAds.xcodeproj/xcuserdata
 .DS_Store
 build-release/
 dist/
+.build/
+.swiftpm/
+build-debug/

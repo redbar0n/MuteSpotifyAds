@@ -1,12 +1,16 @@
-MuteSpotifyAds (community-maintained fork)
+Mutefy (formerly MuteSpotifyAds)
 
 Original project:
 - Repository: https://github.com/simonmeusel/MuteSpotifyAds
 - Author: Simon Meusel
 
-Fork project:
+Intermediate fork:
 - Repository: https://github.com/MikeWLloyd/MuteSpotifyAds
 - Maintainer: MikeWLloyd contributors
+
+This fork:
+- Repository: https://github.com/countnine/MuteSpotifyAds
+- Maintainer: countnine
 
 License:
 - This project is licensed under GNU General Public License v3.0.
@@ -14,8 +18,17 @@ License:
 
 Fork status:
 - The upstream project is archived.
-- This fork contains modifications for compatibility with current macOS versions,
-  build updates, and release/distribution maintenance.
+- The MikeWLloyd fork contains modifications for compatibility with current macOS
+  versions, build updates, and release/distribution maintenance.
+- This fork renames the application to Mutefy as of version 2.0.0 and adds filler
+  music playback, fade in/out, an ad-detection state machine with entry debounce and
+  a safety ceiling, crash recovery of the pre-mute volume, a fallback poll, a settings
+  window, Korean localisation, an open-at-login option and a diagnostic log.
+
+Third-party code incorporated:
+- AdStateMachine.swift and the behaviour of FillerPlayer.swift are ported from the
+  Windows build of Mutefy (https://github.com/countnine/mutefy), which is likewise
+  licensed under GNU General Public License v3.0. No relicensing was involved.
 
 Distribution note (GPLv3):
 - If you distribute binaries, you must also provide the corresponding source code

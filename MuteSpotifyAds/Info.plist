@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.12.0</string>
+	<string>2.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
@@ -25,9 +25,9 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>MuteSpotifyAds needs access to Apple Events to control Spotify playback and volume automatically.</string>
+	<string>Mutefy needs access to Apple Events to detect Spotify advertisements and adjust Spotify's volume.</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2018 Simon Meusel. All rights reserved.</string>
+	<string>Copyright © 2018 Simon Meusel. Copyright © 2026 countnine. Licensed under GPL-3.0.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>

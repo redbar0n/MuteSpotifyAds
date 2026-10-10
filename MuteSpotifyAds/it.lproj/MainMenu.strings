@@ -11,8 +11,8 @@
 /* Class = "NSMenuItem"; title = "≡  Song log"; ObjectID = "GPc-bM-QPt"; */
 "GPc-bM-QPt.title" = "≡  Log delle canzoni";
 
-/* Class = "NSMenuItem"; title = "☂︎ MuteSpotifyAds"; ObjectID = "Qme-N6-cSD"; */
-"Qme-N6-cSD.title" = "☂︎ MuteSpotifyAds";
+/* Class = "NSMenuItem"; title = "☂︎ Mutefy"; ObjectID = "Qme-N6-cSD"; */
+"Qme-N6-cSD.title" = "☂︎ Mutefy";
 
 /* Class = "NSMenuItem"; title = "⚠ Quit with Spotify"; ObjectID = "Ruj-6m-HE0"; */
 "Ruj-6m-HE0.title" = "⚠ Esci con Spotify";

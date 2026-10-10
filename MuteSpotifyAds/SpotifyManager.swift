@@ -35,12 +35,28 @@ class SpotifyManager: NSObject {
     var focusRestoreBundleIdentifier: String? = nil
     
     var lastSongSpotifyURL: String = ""
-    
+
+    /// Debounce + safety ceiling. See AdStateMachine for why both are needed.
+    var stateMachine = AdStateMachine(
+        enterDebounce: Double(MutefySettings.adEnterDebounceMs) / 1000.0,
+        maxAdDuration: Double(MutefySettings.maxMuteSeconds))
+
+    let filler = FillerPlayer()
+
+    /// Fallback poll. File-change events drive most updates, but the safety ceiling only
+    /// advances when something calls `evaluate()` — a detector that has stopped producing
+    /// events would otherwise never reach its own ceiling and the mute would stick forever.
+    private var pollTimer: DispatchSourceTimer?
+    private static let pollInterval: TimeInterval = 0.5
+
+    /// Serialises evaluation: file events, the poll timer and manual nudges all land here.
+    private let evaluationQueue = DispatchQueue(label: "com.countnine.mutefy.evaluate")
+
     init(titleChangeHandler: @escaping ((StatusBarTitle) -> Void)) {
         self.titleChangeHandler = titleChangeHandler
-        
+
         super.init()
-        
+
         // Stop this application when Spotify gets closed
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: nil, using: {
             notification in
@@ -166,57 +182,239 @@ class SpotifyManager: NSObject {
      *
      * Returns true if spotify got muted or unmuted, false otherwise
      */
+    @discardableResult
     func handleTrackChanged() -> Bool {
-        var changed = false
-        
-        if isSpotifyAdPlaying() {
-            if !restartToSkipAdsEnabled && !muted {
-                spotifyUserVolume = getSpotifyVolume()
-                setSpotifyVolume(volume: 0)
-                muted = true
-                titleChangeHandler(.ad)
-                changed = true
-            }
-            if restartToSkipAdsEnabled {
-                restartSpotify()
-            }
-        } else {
-            // Reactivate spotify if ad is done
-            if muted {
-                // Don't change volume if user manually changed it
-                if getSpotifyVolume() == 0 && spotifyUserVolume != 0 {
-                    setSpotifyVolume(volume: spotifyUserVolume)
-                }
-                muted = false
-                titleChangeHandler(.noAd)
-                changed = true
+        // Everything funnels through one serial queue. Without it a file event and a poll
+        // tick can both decide to mute, read each other's half-applied state, and leave
+        // `spotifyUserVolume` holding 0 — which is exactly the value we must never save.
+        evaluationQueue.sync {
+            evaluate()
+        }
+    }
+
+    /// Last raw reading, so a change in what the probe *sees* can be logged separately from
+    /// a change in what the state machine *decides*.
+    private var lastReading: AdReading?
+
+    /// Reads one sample, advances the state machine, and acts only on transitions.
+    private func evaluate() -> Bool {
+        let reading = readAd()
+
+        // Logged because the most damaging failure here is silent: if Automation permission
+        // is refused, every read returns nothing, the machine holds forever and the app
+        // looks alive while doing nothing at all. A reading that never leaves `unknown` is
+        // the signature of that, and it is only visible if we say so.
+        if reading != lastReading {
+            lastReading = reading
+            mutefyLog("reading: \(reading) (\(describeCurrentTrack()))")
+        }
+
+        let trips = stateMachine.safetyTrips
+        let changed = stateMachine.advance(reading)
+
+        if stateMachine.safetyTrips > trips {
+            mutefyLog("SAFETY CEILING tripped after \(MutefySettings.maxMuteSeconds)s — detection failed mid-ad")
+        }
+
+        if changed {
+            if stateMachine.isAd {
+                enterAd()
+            } else {
+                leaveAd()
             }
         }
-        
+
         if endlessPrivateSessionEnabled {
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(2), execute: {
                 self.enablePrivateSession()
             })
         }
-        
+
         if songLogPath != nil {
             logSong()
         }
-        
+
         return changed
+    }
+
+    private func enterAd() {
+        if restartToSkipAdsEnabled {
+            mutefyLog("ad detected — restarting Spotify to skip")
+            restartSpotify()
+            return
+        }
+
+        guard !muted else { return }
+
+        guard let current = getSpotifyVolume() else {
+            mutefyLog("ad detected but Spotify volume unreadable — not muting")
+            return
+        }
+
+        // Spotify was already silent before we touched it; leave it alone rather than
+        // surprising the user with sound when the ad ends.
+        if current == 0 {
+            mutefyLog("ad detected, Spotify already at 0 — leaving it to the user")
+            muted = true
+            spotifyUserVolume = 0
+            titleChangeHandler(.ad)
+            return
+        }
+
+        spotifyUserVolume = current
+        // Persisted before the mute, not after: a crash between the two must leave a
+        // recoverable value behind.
+        MutefySettings.savedSpotifyVolume = current
+        setSpotifyVolume(volume: 0)
+        muted = true
+        titleChangeHandler(.ad)
+        mutefyLog("AD START — muted Spotify (was \(current))")
+
+        filler.start()
+    }
+
+    private func leaveAd() {
+        guard muted else { return }
+
+        // Don't fight a manual volume change: if the user raised it during the ad, that is
+        // now their volume and restoring ours would undo their choice.
+        if let current = getSpotifyVolume(), current == 0, spotifyUserVolume != 0 {
+            setSpotifyVolume(volume: spotifyUserVolume)
+            mutefyLog("AD END — restored Spotify volume to \(spotifyUserVolume)")
+        } else {
+            mutefyLog("AD END — user changed volume during the ad, leaving it alone")
+        }
+
+        muted = false
+        MutefySettings.savedSpotifyVolume = -1
+        titleChangeHandler(.noAd)
+
+        filler.stop()
+    }
+
+    /// Classifies one AppleScript reading.
+    ///
+    /// `unknown` matters: when Spotify is not running or the bridge returns nothing, that is
+    /// not evidence the ad ended. Treating it as "not an ad" would unmute mid-break every
+    /// time a query hiccupped.
+    private func readAd() -> AdReading {
+        let url = getCurrentSongSpotifyURL().trimmingCharacters(in: .whitespacesAndNewlines)
+        if url.isEmpty { return .unknown }
+        return url.starts(with: "spotify:ad") ? .ad : .notAd
+    }
+
+    /// One-line summary of what Spotify says right now, for the log. Kept off the hot path —
+    /// only called when a reading changes, not on every poll.
+    private func describeCurrentTrack() -> String {
+        let url = getCurrentSongSpotifyURL().trimmingCharacters(in: .whitespacesAndNewlines)
+        if url.isEmpty {
+            return "no reply from Spotify — not running, or Automation permission refused"
+        }
+        let volume = getSpotifyVolume().map(String.init) ?? "?"
+        return "url=\(url) volume=\(volume)"
+    }
+
+    /// Starts the fallback poll. See `pollTimer`.
+    func startPolling() {
+        let timer = DispatchSource.makeTimerSource(queue: evaluationQueue)
+        timer.schedule(deadline: .now() + SpotifyManager.pollInterval,
+                       repeating: SpotifyManager.pollInterval)
+        timer.setEventHandler { [weak self] in
+            _ = self?.evaluate()
+        }
+        timer.resume()
+        pollTimer = timer
+    }
+
+    func stopPolling() {
+        pollTimer?.cancel()
+        pollTimer = nil
+    }
+
+    /// Restores Spotify's volume if a previous run died during an ad.
+    ///
+    /// The app this forks from kept the pre-mute volume in memory only, so a force-quit
+    /// mid-ad left Spotify permanently silent with nothing able to put it back. Runs at
+    /// launch regardless of whether ad muting is currently enabled.
+    func recoverStaleMuteIfNeeded() {
+        let saved = MutefySettings.savedSpotifyVolume
+        guard saved > 0 else { return }
+
+        MutefySettings.savedSpotifyVolume = -1
+
+        guard let current = getSpotifyVolume() else { return }
+        guard current == 0 else {
+            mutefyLog("stale mute record found (\(saved)) but Spotify is at \(current) — nothing to do")
+            return
+        }
+
+        setSpotifyVolume(volume: saved)
+        mutefyLog("RECOVERED — previous run died during an ad, restored Spotify volume to \(saved)")
+    }
+
+    /// Puts Spotify's volume back on the way out.
+    ///
+    /// Quitting during an ad must not leave Spotify silent. Unlike the Windows build, where
+    /// the mute died with the process, here it is a value written into Spotify itself and
+    /// survives us.
+    func restoreVolumeBeforeQuitting() {
+        // Cancelling does not wait for a handler already running, and this is called from the
+        // main thread while the poll may be halfway through enterAd(). Going through the same
+        // serial queue makes us queue behind it instead of reading `muted` mid-update — which
+        // on this path would mean quitting without restoring.
+        stopPolling()
+
+        evaluationQueue.sync {
+            guard muted, spotifyUserVolume > 0 else {
+                MutefySettings.savedSpotifyVolume = -1
+                return
+            }
+
+            setSpotifyVolume(volume: spotifyUserVolume)
+            muted = false
+            MutefySettings.savedSpotifyVolume = -1
+            mutefyLog("quitting during an ad — restored Spotify volume to \(spotifyUserVolume)")
+        }
+    }
+
+    /// Rebuilds the state machine after the user changes debounce or ceiling settings.
+    func applySettings() {
+        evaluationQueue.sync {
+            stateMachine = AdStateMachine(
+                enterDebounce: Double(MutefySettings.adEnterDebounceMs) / 1000.0,
+                maxAdDuration: Double(MutefySettings.maxMuteSeconds))
+            mutefyLog("settings applied — debounce \(MutefySettings.adEnterDebounceMs)ms, ceiling \(MutefySettings.maxMuteSeconds)s")
+        }
     }
     
     func setSpotifyVolume(volume: Int) {
         _ = runAppleScript(script: SpotifyManager.appleScriptSpotifyPrefix + "set sound volume to \(volume)")
+
+        // Read back and complain if it did not take. Spotify stores the volume with a little
+        // loss — asking for 94 reads back 93, 90 reads back 89 — so only a real disagreement
+        // is worth logging. This exists because "Spotify was left silent" is the one failure
+        // the user cannot diagnose from the outside, and a write that silently did nothing
+        // would look identical to one that was never attempted.
+        guard let actual = getSpotifyVolume() else {
+            mutefyLog("volume write of \(volume) could not be confirmed — Spotify did not answer")
+            return
+        }
+        if abs(actual - volume) > 2 {
+            mutefyLog("volume write MISMATCH: asked for \(volume), Spotify reports \(actual)")
+        }
     }
     
     /**
-     * Gets current spotify volume
+     * Gets current spotify volume, or nil when Spotify could not be asked.
+     *
+     * Returns an optional rather than crashing: the original force-unwrapped both the split
+     * and the Int conversion, so an empty reply — which is what you get when Spotify is not
+     * running — took the whole app down with an index-out-of-range.
      */
-    func getSpotifyVolume() -> Int {
-        let volume = runAppleScript(script: SpotifyManager.appleScriptSpotifyPrefix + "(get sound volume)")
-        // Convert to number
-        return Int(volume.split(separator: "\n")[0])!
+    func getSpotifyVolume() -> Int? {
+        let reply = runAppleScript(script: SpotifyManager.appleScriptSpotifyPrefix + "(get sound volume)")
+        guard let firstLine = reply.split(separator: "\n").first else { return nil }
+        return Int(firstLine.trimmingCharacters(in: .whitespaces))
     }
     
     /**
@@ -328,11 +526,21 @@ class SpotifyManager: NSObject {
         let pipe = Pipe()
         process.standardOutput = pipe
         
-        process.launch()
+        // stderr is discarded deliberately: osascript writes permission and
+        // "application isn't running" errors there, and an empty stdout already carries
+        // that meaning for every caller here.
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+        } catch {
+            mutefyLog("osascript failed to launch: \(error.localizedDescription)")
+            return ""
+        }
         process.waitUntilExit()
-        
-        let data = pipe.fileHandleForReading.availableData
-        return String(data: data, encoding: String.Encoding.utf8)!
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        return String(data: data, encoding: .utf8) ?? ""
     }
     
     func toggleSpotifyPlayPause() {

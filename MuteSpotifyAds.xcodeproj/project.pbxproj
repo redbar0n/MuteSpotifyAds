@@ -12,6 +12,13 @@
 		F336C09320BDA27E00C757DA /* SpotifyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F336C09220BDA27E00C757DA /* SpotifyManager.swift */; };
 		F336C09520BDA34200C757DA /* StatusBarTitle.swift in Sources */ = {isa = PBXBuildFile; fileRef = F336C09420BDA34200C757DA /* StatusBarTitle.swift */; };
 		F37277D2212203EC00CC05DB /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = F321C45B20B89BC100C504CD /* MainMenu.xib */; };
+		AAF1000000000000000000B1 /* MutefyLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000A1 /* MutefyLog.swift */; };
+		AAF1000000000000000000B2 /* AdStateMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000A2 /* AdStateMachine.swift */; };
+		AAF1000000000000000000B3 /* MutefySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000A3 /* MutefySettings.swift */; };
+		AAF1000000000000000000B4 /* FillerPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000A4 /* FillerPlayer.swift */; };
+		AAF1000000000000000000B5 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000A5 /* SettingsWindowController.swift */; };
+		AAF1000000000000000000B6 /* LaunchAtLogin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000A6 /* LaunchAtLogin.swift */; };
+		AAF1000000000000000000D0 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000C0 /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +39,15 @@
 		F3967AAD23315F16006C636F /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/MainMenu.strings"; sourceTree = "<group>"; };
 		F3C10A6620BDB0510002A2B3 /* EonilFileSystemEvents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = EonilFileSystemEvents.framework; path = Carthage/Build/Mac/EonilFileSystemEvents.framework; sourceTree = "<group>"; };
 		F3C10A6920BDBA120002A2B3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		AAF1000000000000000000A1 /* MutefyLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MutefyLog.swift; sourceTree = "<group>"; };
+		AAF1000000000000000000A2 /* AdStateMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdStateMachine.swift; sourceTree = "<group>"; };
+		AAF1000000000000000000A3 /* MutefySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MutefySettings.swift; sourceTree = "<group>"; };
+		AAF1000000000000000000A4 /* FillerPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FillerPlayer.swift; sourceTree = "<group>"; };
+		AAF1000000000000000000A5 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		AAF1000000000000000000A6 /* LaunchAtLogin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLogin.swift; sourceTree = "<group>"; };
+		AAF1000000000000000000C1 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/MainMenu.strings; sourceTree = "<group>"; };
+		AAF1000000000000000000C2 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		AAF1000000000000000000C3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +98,13 @@
 				F321C45F20B89BC100C504CD /* MuteSpotifyAds.entitlements */,
 				F336C09220BDA27E00C757DA /* SpotifyManager.swift */,
 				F336C09420BDA34200C757DA /* StatusBarTitle.swift */,
+				AAF1000000000000000000A2 /* AdStateMachine.swift */,
+				AAF1000000000000000000A4 /* FillerPlayer.swift */,
+				AAF1000000000000000000A6 /* LaunchAtLogin.swift */,
+				AAF1000000000000000000A1 /* MutefyLog.swift */,
+				AAF1000000000000000000A3 /* MutefySettings.swift */,
+				AAF1000000000000000000A5 /* SettingsWindowController.swift */,
+				AAF1000000000000000000C0 /* Localizable.strings */,
 			);
 			path = MuteSpotifyAds;
 			sourceTree = "<group>";
@@ -143,6 +166,7 @@
 				tr,
 				it,
 				es,
+				ko,
 			);
 			mainGroup = F321C44B20B89BBF00C504CD;
 			productRefGroup = F321C45520B89BBF00C504CD /* Products */;
@@ -161,6 +185,7 @@
 			files = (
 				F321C45A20B89BC100C504CD /* Assets.xcassets in Resources */,
 				F37277D2212203EC00CC05DB /* MainMenu.xib in Resources */,
+				AAF1000000000000000000D0 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -174,6 +199,12 @@
 				F336C09320BDA27E00C757DA /* SpotifyManager.swift in Sources */,
 				F336C09520BDA34200C757DA /* StatusBarTitle.swift in Sources */,
 				F321C45820B89BBF00C504CD /* AppDelegate.swift in Sources */,
+				AAF1000000000000000000B1 /* MutefyLog.swift in Sources */,
+				AAF1000000000000000000B2 /* AdStateMachine.swift in Sources */,
+				AAF1000000000000000000B3 /* MutefySettings.swift in Sources */,
+				AAF1000000000000000000B4 /* FillerPlayer.swift in Sources */,
+				AAF1000000000000000000B5 /* SettingsWindowController.swift in Sources */,
+				AAF1000000000000000000B6 /* LaunchAtLogin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -190,8 +221,18 @@
 				C2D71CA12379FBF200F94EBF /* tr */,
 				DE08CCAF23858D24004F6616 /* it */,
 				F329D8472395B3F800EF42B6 /* es */,
+				AAF1000000000000000000C1 /* ko */,
 			);
 			name = MainMenu.xib;
+			sourceTree = "<group>";
+		};
+		AAF1000000000000000000C0 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				AAF1000000000000000000C3 /* en */,
+				AAF1000000000000000000C2 /* ko */,
+			);
+			name = Localizable.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -255,7 +296,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -317,7 +358,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -342,8 +383,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = de.simonmeusel.MuteSpotifyAds;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.countnine.mutefy;
+				PRODUCT_NAME = Mutefy;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};
@@ -365,8 +406,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = de.simonmeusel.MuteSpotifyAds;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.countnine.mutefy;
+				PRODUCT_NAME = Mutefy;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
